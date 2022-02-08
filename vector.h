@@ -32,12 +32,9 @@ struct VECTOR_TYPENAME {
 #define _VECTOR_FUNC(function) \
   __VECTOR_FUNC(VECTOR_TYPENAME, function)
 
-// Equivalent to initializing with { 0 }
 static void _VECTOR_FUNC(construct)(struct VECTOR_TYPENAME *self)
 {
-  self->size = 0;
-  self->capacity = 0;
-  self->storage = NULL;
+  *self = (struct VECTOR_TYPENAME){ 0 };
 }
 
 static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
@@ -51,9 +48,7 @@ static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
     // TODO LOG destroying uninitialized vector
   }
 
-  self->storage = NULL;
-  self->size = 0;
-  self->capacity = 0;
+  *self = (struct VECTOR_TYPENAME){ 0 };
 }
 
 static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
@@ -67,8 +62,7 @@ static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
   // TODO LOG alloc error
   if (self->storage == NULL)
   {
-    self->size = 0;
-    self->capacity = 0;
+    *self = (struct VECTOR_TYPENAME){ 0 };
     return VECTOR_ERROR_ALLOC;
   }
 
@@ -83,8 +77,7 @@ static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
   {
     if (_VECTOR_FUNC(reserve)(self, n))
     {
-      self->size = 0;
-      self->capacity = 0;
+      *self = (struct VECTOR_TYPENAME){ 0 };
       return VECTOR_ERROR_ALLOC;
     }
 #ifdef VECTOR_ELEMENT_CONSTRUCTOR
