@@ -21,15 +21,21 @@
   #define _FAIL_STRING "FAIL"
 #endif /* TERM_COLORS */
 
-#define _LOG_TEST_START \
-  printf("%s >\n", __func__)
-#define _LOG_TEST_END(res) \
-  printf("%s < %s\n", __func__, (res) ? _FAIL_STRING : _PASS_STRING)
+#ifndef QUIET
+  #define _LOG_TEST_START \
+    printf("%s >\n", __func__)
+  #define _LOG_TEST_END(res) \
+    printf("%s < %s\n", __func__, (res) ? _FAIL_STRING : _PASS_STRING)
+#else
+  #define _LOG_TEST_START
+  #define _LOG_TEST_END(res) \
+    printf("%s %s\n", __func__, (res) ? _FAIL_STRING : _PASS_STRING)
+#endif
 
 
 /* General testing utilities */
 #define TEST(name, body) \
-static void name() { int _RESULT = 0; _LOG_TEST_START; { body } _LOG_TEST_END(_RESULT); }
+static int name() { int _RESULT = 0; _LOG_TEST_START; { body } _LOG_TEST_END(_RESULT); return _RESULT; }
 
 #define ASSERT(statement) \
   if (!(statement)) { \

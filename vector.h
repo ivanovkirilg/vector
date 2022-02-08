@@ -66,7 +66,15 @@ static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
   }
 
   // TODO LOG alloc error
-  return (self->storage == NULL) ? VECTOR_ERROR_ALLOC : VECTOR_ERROR_NONE; // DEP@resize
+  if (self->storage == NULL)
+  {
+    self->size = 0;
+    self->capacity = 0;
+    return VECTOR_ERROR_ALLOC;
+  }
+
+  self->capacity = n;
+  return VECTOR_ERROR_NONE; // DEP@resize
 }
 
 static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
@@ -76,6 +84,8 @@ static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
   {
     if (_VECTOR_FUNC(reserve)(self, n))
     {
+      self->size = 0;
+      self->capacity = 0;
       return VECTOR_ERROR_ALLOC;
     }
 #ifdef VECTOR_ELEMENT_CONSTRUCTOR
@@ -98,6 +108,19 @@ static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
 
   self->size = n;
   return VECTOR_ERROR_NONE;
+}
+
+static VECTOR_ELEMENT_TYPE *_VECTOR_FUNC(at)(
+  const struct VECTOR_TYPENAME *self, size_t n)
+{
+  // TODO check self validity (0 <= size <= cap, cap==0 -> storage==NULL, etc)
+  // Bounds check
+  if (n < 0 || n >= self->size)
+  {
+    return NULL;
+  }
+
+  return &self->storage[n];
 }
 
 #undef VECTOR_TYPENAME

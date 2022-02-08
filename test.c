@@ -34,6 +34,7 @@ TEST(test_reserve,
   Vector_construct(&vector);
 
   Vector_reserve(&vector, 5);
+  ASSERT(vector.capacity == 5);
   ASSERT(vector.storage != NULL);
   ASSERT(vector.size == 0);
 
@@ -49,24 +50,58 @@ TEST(test_resize,
   Vector_resize(&vector, 3);
   ASSERT(vector.storage != NULL);
   ASSERT(vector.size == 3);
+  ASSERT(vector.size <= vector.capacity);
 
   // Shrink and call destructor
   Vector_resize(&vector, 2);
   ASSERT(vector.size == 2);
+  ASSERT(vector.size <= vector.capacity);
   ASSERT(vector.storage[2] == DESTROYED);
 
   // Grow and call constructor
   Vector_resize(&vector, 4);
   ASSERT(vector.size == 4);
+  ASSERT(vector.size <= vector.capacity);
   ASSERT(vector.storage[2] == 0);
   ASSERT(vector.storage[3] == 0);
 
   Vector_destruct(&vector);
 })
 
+TEST(test_at,
+{
+  struct Vector vector;
+  Vector_construct(&vector);
+
+  ASSERT(Vector_at(&vector, 1) == NULL);
+
+  Vector_resize(&vector, 3);
+  ASSERT(Vector_at(&vector, -1) == NULL);
+  ASSERT(Vector_at(&vector, 3) == NULL);
+  ASSERT(Vector_at(&vector, 1) != NULL);
+  ASSERT(Vector_at(&vector, 0) == vector.storage);
+  ASSERT(Vector_at(&vector, 1) > vector.storage);
+  // LOG_VECTOR(vector);
+  // LOG_ELEMENTS_INT(vector);
+
+  Vector_destruct(&vector);
+})
+
 int main()
 {
-  test_construct_destruct();
-  test_reserve();
-  test_resize();
+  int failures = 0;
+
+  failures += test_construct_destruct();
+  failures += test_reserve();
+  failures += test_resize();
+  failures += test_at();
+
+  if (failures)
+  {
+    printf("FAILED %d test cases\n", failures);
+  }
+  else
+  {
+    printf("OK\n");
+  }
 }
