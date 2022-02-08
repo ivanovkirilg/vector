@@ -1,12 +1,13 @@
-#include "test.h"
+#include "test_vector.h"
 
+static const int DESTROYED = -9999;
 static void construct(int *el)
 {
   *el = 0;
 }
 static void destruct(int *el)
 {
-  *el = -9999;
+  *el = DESTROYED;
 }
 
 #define VECTOR_ELEMENT_CONSTRUCTOR construct
@@ -52,7 +53,7 @@ TEST(test_resize,
   // Shrink and call destructor
   Vector_resize(&vector, 2);
   ASSERT(vector.size == 2);
-  ASSERT(vector.storage[2] == -9999);
+  ASSERT(vector.storage[2] == DESTROYED);
 
   // Grow and call constructor
   Vector_resize(&vector, 4);
