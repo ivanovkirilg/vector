@@ -1,9 +1,8 @@
-/* WARNING:
-   This header purposefully  HAS  NO  HEADER GUARD.
-   This was done to enable definition of multiple vector types.
-*/
+#ifndef KIVANOV_C_VECTOR
+#define KIVANOV_C_VECTOR
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 /* INTERFACE */
 // TODO: Definition macro instead
@@ -123,7 +122,14 @@ static VECTOR_ELEMENT_TYPE *_VECTOR_FUNC(at)(
   return &self->storage[n];
 }
 
+static bool _VECTOR_FUNC(empty)(const struct VECTOR_TYPENAME *self)
+{
+  return (self->size == 0);
+}
+
 #undef VECTOR_TYPENAME
 #undef VECTOR_ELEMENT_TYPE
 #undef VECTOR_ELEMENT_CONSTRUCTOR
 #undef VECTOR_ELEMENT_DESTRUCTOR
+
+#endif // KIVANOV_C_VECTOR

@@ -87,6 +87,22 @@ TEST(test_at,
   Vector_destruct(&vector);
 })
 
+TEST(test_empty,
+{
+  struct Vector vector;
+  Vector_construct(&vector);
+
+  ASSERT(Vector_empty(&vector));
+
+  Vector_resize(&vector, 3);
+  ASSERT(!Vector_empty(&vector));
+
+  Vector_resize(&vector, 0);
+  ASSERT(Vector_empty(&vector));
+
+  Vector_destruct(&vector);
+})
+
 int main()
 {
   int failures = 0;
@@ -95,6 +111,7 @@ int main()
   failures += test_reserve();
   failures += test_resize();
   failures += test_at();
+  failures += test_empty();
 
   if (failures)
   {
