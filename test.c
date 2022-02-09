@@ -28,6 +28,15 @@ TEST(test_construct_destruct,
   ASSERT(vector.capacity == 0);
 })
 
+TEST(test_destruct_NULL,
+{
+  struct Vector vector;
+  Vector_destruct(&vector);
+  ASSERT(vector.storage == NULL);
+  ASSERT(vector.size == 0);
+  ASSERT(vector.capacity == 0);
+})
+
 TEST(test_reserve,
 {
   struct Vector vector;
@@ -108,6 +117,7 @@ int main()
   int failures = 0;
 
   failures += test_construct_destruct();
+  failures += test_destruct_NULL();
   failures += test_reserve();
   failures += test_resize();
   failures += test_at();

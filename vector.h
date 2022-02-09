@@ -17,12 +17,44 @@
 /* Error codes */
 #define VECTOR_ERROR_NONE 0
 #define VECTOR_ERROR_ALLOC 1
+#define VECTOR_ERROR_INVALID 2
 
 struct VECTOR_TYPENAME {
   size_t size;
   size_t capacity;
   VECTOR_ELEMENT_TYPE *storage;
 };
+
+#ifndef NDEBUG
+  #include <stdio.h>
+  #define _VECTOR_LOG_ERROR(msg, ...) \
+    fprintf(stderr, "%s: " msg "\n", __func__, ##__VA_ARGS__ )
+#else
+  #define _VECTOR_LOG_ERROR(msg, ...)
+#endif
+static int _VECTOR_VERIFY_INVARIANTS(const struct VECTOR_TYPENAME *vec)
+{
+  if (vec->capacity == 0 && vec->storage != NULL)
+  {
+    _VECTOR_LOG_ERROR("Invalid vector representation: "
+                      "capacity==0 but storage!=NULL.");
+    return VECTOR_ERROR_INVALID;
+  }
+  if (vec->capacity > 0  && vec->storage == NULL)
+  {
+    _VECTOR_LOG_ERROR("Invalid vector representation: "
+                      "storage==NULL but capacity!=0.");
+    return VECTOR_ERROR_INVALID;
+  }
+  if (vec->capacity < vec->size)
+  {
+    _VECTOR_LOG_ERROR("Invalid vector representation: "
+                      "capacity<size.");
+    return VECTOR_ERROR_INVALID;
+  }
+
+  return VECTOR_ERROR_NONE;
+}
 
 /* Macro magic to figure out the actual function names */
 #define ___VECTOR_FUNC(_prefix, function) \
@@ -39,13 +71,10 @@ static void _VECTOR_FUNC(construct)(struct VECTOR_TYPENAME *self)
 
 static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
 {
-  if (self->storage && self->capacity)
+  if ((_VECTOR_VERIFY_INVARIANTS(self) == VECTOR_ERROR_NONE)
+      && self->storage)
   {
     free(self->storage);
-  }
-  else if (self->storage || self->capacity)
-  {
-    // TODO LOG destroying uninitialized vector
   }
 
   *self = (struct VECTOR_TYPENAME){ 0 };
@@ -53,31 +82,41 @@ static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
 
 static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
 {
+  if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
+  {
+    *self = (struct VECTOR_TYPENAME){ 0 }; // DEP@resize
+    return VECTOR_ERROR_INVALID;
+  }
+
   if (self->capacity < n)
   {
     self->storage = (VECTOR_ELEMENT_TYPE *)
       realloc( self->storage, n * sizeof(VECTOR_ELEMENT_TYPE) );
-  }
 
-  // TODO LOG alloc error
-  if (self->storage == NULL)
-  {
-    *self = (struct VECTOR_TYPENAME){ 0 };
-    return VECTOR_ERROR_ALLOC;
+    if (self->storage == NULL)
+    {
+      _VECTOR_LOG_ERROR("Allocation failed.");
+      *self = (struct VECTOR_TYPENAME){ 0 }; // DEP@resize
+      return VECTOR_ERROR_ALLOC;
+    }
   }
 
   self->capacity = n;
-  return VECTOR_ERROR_NONE; // DEP@resize
+  return VECTOR_ERROR_NONE;
 }
 
 static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
 {
+  if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
+  {
+    *self = (struct VECTOR_TYPENAME){ 0 };
+    return VECTOR_ERROR_INVALID;
+  }
   // Growing
   if (n > self->size)
   {
     if (_VECTOR_FUNC(reserve)(self, n))
     {
-      *self = (struct VECTOR_TYPENAME){ 0 };
       return VECTOR_ERROR_ALLOC;
     }
 #ifdef VECTOR_ELEMENT_CONSTRUCTOR
@@ -105,14 +144,30 @@ static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
 static VECTOR_ELEMENT_TYPE *_VECTOR_FUNC(at)(
   const struct VECTOR_TYPENAME *self, size_t n)
 {
-  // TODO check self validity (0 <= size <= cap, cap==0 -> storage==NULL, etc)
-  // Bounds check
-  if (n < 0 || n >= self->size)
+  if ((_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE))
   {
     return NULL;
   }
 
+  if (n < 0 || n >= self->size)
+  {
+    _VECTOR_LOG_ERROR("Index %zu out of bounds (size=%zu).", n, self->size);
+    return NULL;
+  }
+
   return &self->storage[n];
+}
+
+static size_t _VECTOR_FUNC(size)(const struct VECTOR_TYPENAME *self)
+{
+  if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
+  {
+    _VECTOR_LOG_ERROR("Invalid representation, "
+                      "returning size 0 instead of %zu.", self->size);
+    return 0;
+  }
+
+  return self->size;
 }
 
 static bool _VECTOR_FUNC(empty)(const struct VECTOR_TYPENAME *self)
