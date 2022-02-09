@@ -96,6 +96,24 @@ TEST(test_at,
   Vector_destruct(&vector);
 })
 
+TEST(test_size,
+{
+  struct Vector vector;
+  Vector_construct(&vector);
+
+  ASSERT(Vector_size(&vector) == 0);
+
+  Vector_resize(&vector, 5);
+  ASSERT(Vector_size(&vector) == 5);
+  // Invalidate the vector
+  vector.size = 99;
+  ASSERT(Vector_size(&vector) == 0);
+
+  // Revert
+  vector.size = 5;
+  Vector_destruct(&vector);
+})
+
 TEST(test_empty,
 {
   struct Vector vector;
@@ -121,6 +139,7 @@ int main()
   failures += test_reserve();
   failures += test_resize();
   failures += test_at();
+  failures += test_size();
   failures += test_empty();
 
   if (failures)

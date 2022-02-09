@@ -27,34 +27,41 @@ struct VECTOR_TYPENAME {
 
 #ifndef NDEBUG
   #include <stdio.h>
+  #define __VECTOR_LOG_ERROR(func, msg, ...) \
+    fprintf(stderr, "%s: " msg "\n", func, ##__VA_ARGS__ )
   #define _VECTOR_LOG_ERROR(msg, ...) \
-    fprintf(stderr, "%s: " msg "\n", __func__, ##__VA_ARGS__ )
+    __VECTOR_LOG_ERROR(__func__, msg, ##__VA_ARGS__ )
 #else
+  #define __VECTOR_LOG_ERROR(func, msg, ...)
   #define _VECTOR_LOG_ERROR(msg, ...)
 #endif
-static int _VECTOR_VERIFY_INVARIANTS(const struct VECTOR_TYPENAME *vec)
+
+static int __VECTOR_VERIFY_INVARIANTS(
+  const struct VECTOR_TYPENAME *vec, const char *func)
 {
   if (vec->capacity == 0 && vec->storage != NULL)
   {
-    _VECTOR_LOG_ERROR("Invalid vector representation: "
-                      "capacity==0 but storage!=NULL.");
+    __VECTOR_LOG_ERROR(func,
+      "Invalid vector representation: capacity==0 but storage!=NULL.");
     return VECTOR_ERROR_INVALID;
   }
   if (vec->capacity > 0  && vec->storage == NULL)
   {
-    _VECTOR_LOG_ERROR("Invalid vector representation: "
-                      "storage==NULL but capacity!=0.");
+    __VECTOR_LOG_ERROR(func,
+      "Invalid vector representation: storage==NULL but capacity!=0.");
     return VECTOR_ERROR_INVALID;
   }
   if (vec->capacity < vec->size)
   {
-    _VECTOR_LOG_ERROR("Invalid vector representation: "
-                      "capacity<size.");
+    __VECTOR_LOG_ERROR(func,
+      "Invalid vector representation: capacity<size.");
     return VECTOR_ERROR_INVALID;
   }
 
   return VECTOR_ERROR_NONE;
 }
+#define _VECTOR_VERIFY_INVARIANTS(vec) \
+  __VECTOR_VERIFY_INVARIANTS(vec, __func__)
 
 /* Macro magic to figure out the actual function names */
 #define ___VECTOR_FUNC(_prefix, function) \
