@@ -25,15 +25,15 @@ struct VECTOR_TYPENAME {
   VECTOR_ELEMENT_TYPE *storage;
 };
 
-#ifndef NDEBUG
+#if defined(NDEBUG) || defined(VECTOR_QUIET)
+  #define __VECTOR_LOG_ERROR(func, msg, ...)
+  #define _VECTOR_LOG_ERROR(msg, ...)
+#else
   #include <stdio.h>
   #define __VECTOR_LOG_ERROR(func, msg, ...) \
     fprintf(stderr, "%s: " msg "\n", func, ##__VA_ARGS__ )
   #define _VECTOR_LOG_ERROR(msg, ...) \
     __VECTOR_LOG_ERROR(__func__, msg, ##__VA_ARGS__ )
-#else
-  #define __VECTOR_LOG_ERROR(func, msg, ...)
-  #define _VECTOR_LOG_ERROR(msg, ...)
 #endif
 
 static int __VECTOR_VERIFY_INVARIANTS(

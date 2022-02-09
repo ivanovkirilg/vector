@@ -3,6 +3,10 @@
 
 #include "test.h"
 
+#if defined(QUIET)
+  #define VECTOR_QUIET
+#endif
+
 #define LOG_VECTOR(vec) \
   LOG("%s: size=%zu, capacity=%zu, storage=%p", \
       #vec, vec.size, vec.capacity, vec.storage)
