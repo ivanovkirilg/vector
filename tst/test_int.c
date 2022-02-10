@@ -12,7 +12,7 @@ static void destruct(int *el)
 
 #define VECTOR_ELEMENT_CONSTRUCTOR construct
 #define VECTOR_ELEMENT_DESTRUCTOR destruct
-#include "vector.h"
+#include "../vector.h"
 
 // Sanity check
 TEST(test_construct_destruct,
