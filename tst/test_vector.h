@@ -17,4 +17,10 @@
       LOG("%s[%zu]=(%d)", #vec, i, vec.storage[i]); \
   } while (0)
 
+#define LOG_ELEMENTS_STRING(vec) \
+  do { \
+      for (size_t i = 0; i < vec.size; i++) \
+      LOG("%s[%zu]=(%s)", #vec, i, vec.storage[i]); \
+  } while (0)
+
 #endif // KIVANOV_C_TESTING_VECTOR

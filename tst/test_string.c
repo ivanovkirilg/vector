@@ -1,5 +1,6 @@
 #include "test_vector.h"
 
+#include <string.h>
 #include <stdlib.h>
 
 static void construct(char ** el)
@@ -59,6 +60,33 @@ TEST(test_resize,
   StrVec_destruct(&vector);
 })
 
+static int compare(const void *left, const void *right)
+{
+  return ((char**)left) [0][0] - ((char**)right) [0][0];
+}
+
+TEST(test_names,
+{
+  struct StrVec vector;
+  StrVec_construct(&vector);
+
+  StrVec_resize(&vector, 3);
+
+  strcpy(*StrVec_at(&vector, 0), "Bob");
+  strcpy(*StrVec_at(&vector, 1), "Charlie Ferguson");
+  strcpy(*StrVec_at(&vector, 2), "Alice");
+  // LOG_ELEMENTS_STRING(vector);
+
+  qsort(vector.storage, vector.size, sizeof(char*), compare);
+  // LOG_ELEMENTS_STRING(vector);
+
+  ASSERT(strcmp(vector.storage[0], "Alice") == 0);
+  ASSERT(strcmp(vector.storage[1], "Bob") == 0);
+  ASSERT(strcmp(vector.storage[2], "Charlie Ferguson") == 0);
+
+  StrVec_destruct(&vector);
+})
+
 
 int main()
 {
@@ -67,6 +95,7 @@ int main()
   failures += test_construct_destruct();
   failures += test_destruct_NULL();
   failures += test_resize();
+  failures += test_names();
 
   if (failures)
   {
