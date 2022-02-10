@@ -130,6 +130,18 @@ TEST(test_empty,
   Vector_destruct(&vector);
 })
 
+TEST(test_NULL,
+{
+  Vector_construct(NULL);
+  Vector_destruct(NULL);
+
+  ASSERT(Vector_reserve(NULL, 5) == VECTOR_ERROR_NULL);
+  ASSERT(Vector_resize(NULL, 5) == VECTOR_ERROR_NULL);
+  ASSERT(Vector_at(NULL, 5) == NULL);
+  ASSERT(Vector_size(NULL) == 0);
+  ASSERT(Vector_empty(NULL) == true);
+})
+
 int main()
 {
   int failures = 0;
@@ -141,6 +153,7 @@ int main()
   failures += test_at();
   failures += test_size();
   failures += test_empty();
+  failures += test_NULL();
 
   if (failures)
   {

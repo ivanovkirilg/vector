@@ -16,8 +16,9 @@
 
 /* Error codes */
 #define VECTOR_ERROR_NONE 0
-#define VECTOR_ERROR_ALLOC 1
+#define VECTOR_ERROR_NULL 1
 #define VECTOR_ERROR_INVALID 2
+#define VECTOR_ERROR_ALLOC 3
 
 struct VECTOR_TYPENAME {
   size_t size;
@@ -36,9 +37,19 @@ struct VECTOR_TYPENAME {
     __VECTOR_LOG_ERROR(__func__, msg, ##__VA_ARGS__ )
 #endif
 
+#define _VECTOR_NULL_RETURN(vec, ret_val) \
+  do { \
+    if (vec == NULL) { \
+      _VECTOR_LOG_ERROR( #vec " is NULL."); \
+      return ret_val; \
+    } \
+  } while (0)
+
 static int __VECTOR_VERIFY_INVARIANTS(
   const struct VECTOR_TYPENAME *vec, const char *func)
 {
+  _VECTOR_NULL_RETURN(vec, VECTOR_ERROR_NULL);
+
   if (vec->capacity == 0 && vec->storage != NULL)
   {
     __VECTOR_LOG_ERROR(func,
@@ -71,13 +82,20 @@ static int __VECTOR_VERIFY_INVARIANTS(
 #define _VECTOR_FUNC(function) \
   __VECTOR_FUNC(VECTOR_TYPENAME, function)
 
+
+/* * * Functions * * */
+
 static void _VECTOR_FUNC(construct)(struct VECTOR_TYPENAME *self)
 {
+  _VECTOR_NULL_RETURN(self, );
+
   *self = (struct VECTOR_TYPENAME){ 0 };
 }
 
 static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
 {
+  _VECTOR_NULL_RETURN(self, );
+
   if ((_VECTOR_VERIFY_INVARIANTS(self) == VECTOR_ERROR_NONE)
       && self->storage)
   {
@@ -89,6 +107,8 @@ static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
 
 static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
 {
+  _VECTOR_NULL_RETURN(self, VECTOR_ERROR_NULL);
+
   if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
   {
     *self = (struct VECTOR_TYPENAME){ 0 }; // DEP@resize
@@ -114,6 +134,8 @@ static int _VECTOR_FUNC(reserve)(struct VECTOR_TYPENAME *self, size_t n)
 
 static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
 {
+  _VECTOR_NULL_RETURN(self, VECTOR_ERROR_NULL);
+
   if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
   {
     *self = (struct VECTOR_TYPENAME){ 0 };
@@ -151,6 +173,8 @@ static int _VECTOR_FUNC(resize)(struct VECTOR_TYPENAME *self, size_t n)
 static VECTOR_ELEMENT_TYPE *_VECTOR_FUNC(at)(
   const struct VECTOR_TYPENAME *self, size_t n)
 {
+  _VECTOR_NULL_RETURN(self, NULL);
+
   if ((_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE))
   {
     return NULL;
@@ -167,10 +191,12 @@ static VECTOR_ELEMENT_TYPE *_VECTOR_FUNC(at)(
 
 static size_t _VECTOR_FUNC(size)(const struct VECTOR_TYPENAME *self)
 {
+  _VECTOR_NULL_RETURN(self, 0);
+
   if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
   {
     _VECTOR_LOG_ERROR("Invalid representation, "
-                      "returning size 0 instead of %zu.", self->size);
+                      "returning size=0 instead of %zu.", self->size);
     return 0;
   }
 
@@ -179,6 +205,14 @@ static size_t _VECTOR_FUNC(size)(const struct VECTOR_TYPENAME *self)
 
 static bool _VECTOR_FUNC(empty)(const struct VECTOR_TYPENAME *self)
 {
+  _VECTOR_NULL_RETURN(self, true);
+
+  if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
+  {
+    _VECTOR_LOG_ERROR("Invalid representation, returning empty=true.");
+    return true;
+  }
+
   return (self->size == 0);
 }
 
