@@ -1,17 +1,21 @@
 CC=gcc
-EXEC=./tst/test.out
-CFLAGS=-Wunused-function -Wall -o ${EXEC} -DTERM_COLORS
+OUT=./tst/test.out
+EXEC=${OUT}
+CFLAGS=-Wunused-function -fcompare-debug-second -Wall -o ${OUT} -DTERM_COLORS
+VGFLAGS=-s --track-origins=yes --leak-check=full
 
 # Test cases:
 all : int string
 
 int:
+	@echo
 	gcc ${CFLAGS} tst/test_int.c
 	@echo ==== INT ====
 	@${EXEC}
 	@echo ^^^^ INT ^^^^
 
 string:
+	@echo
 	gcc ${CFLAGS} tst/test_string.c
 	@echo ==== STRING ====
 	@${EXEC}
@@ -25,3 +29,6 @@ quiet: all
 
 nocol: CFLAGS := $(filter-out -DTERM_COLORS,$(CFLAGS))
 nocol: all
+
+mem: EXEC := valgrind ${VGFLAGS} ${OUT}
+mem: all
