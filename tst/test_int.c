@@ -17,8 +17,7 @@ static void destruct(int *el)
 // Sanity check
 TEST(test_construct_destruct,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
   ASSERT(vector.storage == NULL);
   ASSERT(vector.size == 0);
   ASSERT(vector.capacity == 0);
@@ -30,7 +29,7 @@ TEST(test_construct_destruct,
 
 TEST(test_destruct_NULL,
 {
-  struct Vector vector;
+  struct Vector vector = {0};
   Vector_destruct(&vector);
   ASSERT(vector.storage == NULL);
   ASSERT(vector.size == 0);
@@ -39,8 +38,7 @@ TEST(test_destruct_NULL,
 
 TEST(test_reserve,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
 
   Vector_reserve(&vector, 5);
   ASSERT(vector.capacity == 5);
@@ -52,8 +50,7 @@ TEST(test_reserve,
 
 TEST(test_resize,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
 
   // Reserve
   Vector_resize(&vector, 3);
@@ -79,8 +76,7 @@ TEST(test_resize,
 
 TEST(test_at,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
 
   ASSERT(Vector_at(&vector, 1) == NULL);
 
@@ -98,8 +94,7 @@ TEST(test_at,
 
 TEST(test_size,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
 
   ASSERT(Vector_size(&vector) == 0);
 
@@ -116,8 +111,7 @@ TEST(test_size,
 
 TEST(test_empty,
 {
-  struct Vector vector;
-  Vector_construct(&vector);
+  struct Vector vector = {0};
 
   ASSERT(Vector_empty(&vector));
 
@@ -130,9 +124,31 @@ TEST(test_empty,
   Vector_destruct(&vector);
 })
 
+TEST(test_push_back,
+{
+  struct Vector vector = {0};
+
+  Vector_push_back(&vector, 5);
+  ASSERT(vector.capacity == _VECTOR_BASE_CAPACITY);
+  ASSERT(vector.size == 1u);
+  ASSERT(vector.storage[0] == 5);
+
+  Vector_resize(&vector, _VECTOR_BASE_CAPACITY);
+  Vector_push_back(&vector, -42);
+  ASSERT(vector.capacity ==
+         (size_t) (_VECTOR_BASE_CAPACITY * _VECTOR_CAPACITY_GROWTH_RATE));
+  ASSERT(vector.size == 9u);
+  ASSERT(vector.storage[0] == 5);
+  ASSERT(vector.storage[8] == -42);
+
+  // LOG_VECTOR(vector);
+  // LOG_ELEMENTS_INT(vector);
+  Vector_destruct(&vector);
+})
+
 TEST(test_NULL,
 {
-  Vector_construct(NULL);
+  // Basically, don't crash
   Vector_destruct(NULL);
 
   ASSERT(Vector_reserve(NULL, 5) == VECTOR_ERROR_NULL);
@@ -140,27 +156,18 @@ TEST(test_NULL,
   ASSERT(Vector_at(NULL, 5) == NULL);
   ASSERT(Vector_size(NULL) == 0);
   ASSERT(Vector_empty(NULL) == true);
+  ASSERT(Vector_push_back(NULL, 0) == VECTOR_ERROR_NULL);
 })
 
-int main()
-{
-  int failures = 0;
 
-  failures += test_construct_destruct();
-  failures += test_destruct_NULL();
-  failures += test_reserve();
-  failures += test_resize();
-  failures += test_at();
-  failures += test_size();
-  failures += test_empty();
-  failures += test_NULL();
-
-  if (failures)
-  {
-    printf("FAILED %d test cases\n", failures);
-  }
-  else
-  {
-    printf("OK\n");
-  }
-}
+TEST_MAIN(
+  test_construct_destruct,
+  test_destruct_NULL,
+  test_reserve,
+  test_resize,
+  test_at,
+  test_size,
+  test_empty,
+  test_push_back,
+  test_NULL
+)

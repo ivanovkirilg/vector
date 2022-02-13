@@ -12,30 +12,31 @@ static void destruct(char **el)
   free(*el);
   *el = NULL;
 }
+static void copy(const char *src, char **dst)
+{
+  *dst = strdup(src);
+}
 
 #define VECTOR_TYPENAME StrVec
 #define VECTOR_ELEMENT_TYPE char *
+#define VECTOR_ELEMENT_COPY copy
 #define VECTOR_ELEMENT_CONSTRUCTOR construct
 #define VECTOR_ELEMENT_DESTRUCTOR destruct
 #include "../vector.h"
 
 // Sanity check
-TEST(test_construct_destruct,
+TEST(test_generic,
 {
-  struct StrVec vector;
-  StrVec_construct(&vector);
+  struct StrVec vector = {0};
   ASSERT(vector.storage == NULL);
   ASSERT(vector.size == 0);
   ASSERT(vector.capacity == 0);
-  StrVec_destruct(&vector);
-  ASSERT(vector.storage == NULL);
-  ASSERT(vector.size == 0);
-  ASSERT(vector.capacity == 0);
-})
+  ASSERT(StrVec_empty(&vector) == true);
 
-TEST(test_destruct_NULL,
-{
-  struct StrVec vector;
+  StrVec_resize(&vector, 5);
+  ASSERT(StrVec_empty(&vector) == false);
+  ASSERT(StrVec_size(&vector) == 5);
+
   StrVec_destruct(&vector);
   ASSERT(vector.storage == NULL);
   ASSERT(vector.size == 0);
@@ -44,8 +45,7 @@ TEST(test_destruct_NULL,
 
 TEST(test_resize,
 {
-  struct StrVec vector;
-  StrVec_construct(&vector);
+  struct StrVec vector = {0};
 
   StrVec_resize(&vector, 5);
   for (size_t i = 0; i < 5; i++)
@@ -67,18 +67,17 @@ static int compare(const void *left, const void *right)
 
 TEST(test_names,
 {
-  struct StrVec vector;
-  StrVec_construct(&vector);
+  struct StrVec vector = {0};
 
-  StrVec_resize(&vector, 3);
+  StrVec_resize(&vector, 1);
 
   strcpy(*StrVec_at(&vector, 0), "Bob");
-  strcpy(*StrVec_at(&vector, 1), "Charlie Ferguson");
-  strcpy(*StrVec_at(&vector, 2), "Alice");
-  // LOG_ELEMENTS_STRING(vector);
+  StrVec_push_back(&vector,  "Charlie Ferguson");
+  StrVec_push_back(&vector, "Alice");
+  LOG_ELEMENTS_STRING(vector);
 
   qsort(vector.storage, vector.size, sizeof(char*), compare);
-  // LOG_ELEMENTS_STRING(vector);
+  LOG_ELEMENTS_STRING(vector);
 
   ASSERT(strcmp(vector.storage[0], "Alice") == 0);
   ASSERT(strcmp(vector.storage[1], "Bob") == 0);
@@ -87,22 +86,8 @@ TEST(test_names,
   StrVec_destruct(&vector);
 })
 
-
-int main()
-{
-  int failures = 0;
-
-  failures += test_construct_destruct();
-  failures += test_destruct_NULL();
-  failures += test_resize();
-  failures += test_names();
-
-  if (failures)
-  {
-    printf("FAILED %d test cases\n", failures);
-  }
-  else
-  {
-    printf("OK\n");
-  }
-}
+TEST_MAIN(
+  test_generic,
+  test_resize,
+  test_names
+)

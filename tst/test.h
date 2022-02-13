@@ -34,13 +34,33 @@
 
 
 /* General testing utilities */
-#define TEST(name, body) \
-static int name() { int _RESULT = 0; _LOG_TEST_START; { body } _LOG_TEST_END(_RESULT); return _RESULT; }
+#define TEST(name, body)                                                       \
+  static int name() {                                                          \
+    int _RESULT = 0;                                                           \
+    _LOG_TEST_START;                                                           \
+    {body} _LOG_TEST_END(_RESULT);                                             \
+    return _RESULT;                                                            \
+  }
 
-#define ASSERT(statement) \
-  if (!(statement)) { \
-    printf("  " _FAIL_STRING " Assertion (%s) failed.\n", #statement); \
-    _RESULT = 1; \
+#define ASSERT(statement)                                                      \
+  if (!(statement)) {                                                          \
+    printf("  " _FAIL_STRING " Assertion (%s) failed.\n", #statement);         \
+    _RESULT = 1;                                                               \
+  }
+
+#define TEST_MAIN(testcases, ...)                                              \
+  typedef int (*testcase_t)();                                                 \
+  testcase_t _testcases[] = { testcases, ##__VA_ARGS__ };                      \
+  int main(void) {                                                             \
+    int failures = 0;                                                          \
+    for (int i = 0; i < sizeof(_testcases) / sizeof(_testcases[0]); i++)       \
+      failures += _testcases[i]();                                             \
+                                                                               \
+    if (failures)                                                              \
+      printf(_FAIL_STRING ": %d\n", failures);                                 \
+    else                                                                       \
+      printf(_PASS_STRING "\n");                                               \
+    return failures;                                                           \
   }
 
 #endif // KIVANOV_C_TESTING

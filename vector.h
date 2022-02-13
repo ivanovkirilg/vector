@@ -4,27 +4,32 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-/* INTERFACE */
-// TODO: Definition macro instead
+
+/* * * INTERFACE * * */
 #ifndef VECTOR_TYPENAME
   #define VECTOR_TYPENAME Vector
 #endif
 #ifndef VECTOR_ELEMENT_TYPE
   #define VECTOR_ELEMENT_TYPE int
 #endif
-/* !INTERFACE */
 
-/* Error codes */
+
+/* * * Error codes * * */
 #define VECTOR_ERROR_NONE 0
 #define VECTOR_ERROR_NULL 1
 #define VECTOR_ERROR_INVALID 2
 #define VECTOR_ERROR_ALLOC 3
 
+
+/* * *  Internals * * */
 struct VECTOR_TYPENAME {
   size_t size;
   size_t capacity;
   VECTOR_ELEMENT_TYPE *storage;
 };
+
+#define _VECTOR_BASE_CAPACITY 8u
+#define _VECTOR_CAPACITY_GROWTH_RATE 1.6
 
 #if defined(NDEBUG) || defined(VECTOR_QUIET)
   #define __VECTOR_LOG_ERROR(func, msg, ...)
@@ -82,15 +87,36 @@ static int __VECTOR_VERIFY_INVARIANTS(
 #define _VECTOR_FUNC(function) \
   __VECTOR_FUNC(VECTOR_TYPENAME, function)
 
+// Precondition: invariants already verified
+static int __VECTOR_GROW_CAPACITY(
+  struct VECTOR_TYPENAME *vec, const char *func)
+{
+  if (vec->capacity < _VECTOR_BASE_CAPACITY)
+  {
+    vec->capacity = _VECTOR_BASE_CAPACITY;
+  }
+  else
+  {
+    vec->capacity *= _VECTOR_CAPACITY_GROWTH_RATE;
+  }
+
+  vec->storage = (VECTOR_ELEMENT_TYPE *)
+    realloc( vec->storage, vec->capacity * sizeof(VECTOR_ELEMENT_TYPE) );
+
+  if (vec->storage == NULL)
+  {
+    __VECTOR_LOG_ERROR(func, "Allocation for capacity growth failed.");
+    *vec = (struct VECTOR_TYPENAME){ 0 };
+    return VECTOR_ERROR_ALLOC; // DEP@push_back
+  }
+  return VECTOR_ERROR_NONE;
+}
+#define _VECTOR_GROW_CAPACITY(vec) \
+  __VECTOR_GROW_CAPACITY(vec, __func__)
+
+
 
 /* * * Functions * * */
-
-static void _VECTOR_FUNC(construct)(struct VECTOR_TYPENAME *self)
-{
-  _VECTOR_NULL_RETURN(self, );
-
-  *self = (struct VECTOR_TYPENAME){ 0 };
-}
 
 static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
 {
@@ -99,6 +125,12 @@ static void _VECTOR_FUNC(destruct)(struct VECTOR_TYPENAME *self)
   if ((_VECTOR_VERIFY_INVARIANTS(self) == VECTOR_ERROR_NONE)
       && self->storage)
   {
+#ifdef VECTOR_ELEMENT_DESTRUCTOR
+    for (size_t i = 0; i < self->size; i++)
+    {
+      VECTOR_ELEMENT_DESTRUCTOR(&self->storage[i]);
+    }
+#endif
     free(self->storage);
   }
 
@@ -216,8 +248,50 @@ static bool _VECTOR_FUNC(empty)(const struct VECTOR_TYPENAME *self)
   return (self->size == 0);
 }
 
+// A 'copy constructor' can be provided via VECTOR_ELEMENT_COPY.
+// Otherwise, the element is passed by value (default),
+// or if VECTOR_REF_COPY is defined, by address.
+static int _VECTOR_FUNC(push_back)(
+#ifdef VECTOR_REF_COPY
+  struct VECTOR_TYPENAME *self, const VECTOR_ELEMENT_TYPE *val)
+#else
+  struct VECTOR_TYPENAME *self, const VECTOR_ELEMENT_TYPE val)
+#endif // VECTOR_REF_COPY
+{
+  _VECTOR_NULL_RETURN(self, VECTOR_ERROR_NULL);
+
+  if (_VECTOR_VERIFY_INVARIANTS(self) != VECTOR_ERROR_NONE)
+  {
+    return VECTOR_ERROR_INVALID;
+  }
+
+  self->size++;
+  if (self->size >= self->capacity) // > should be impossible
+  {
+    if (_VECTOR_GROW_CAPACITY(self) != VECTOR_ERROR_NONE)
+    {
+      return VECTOR_ERROR_ALLOC;
+    }
+  }
+#ifdef VECTOR_ELEMENT_COPY
+  VECTOR_ELEMENT_COPY(val, &self->storage[self->size-1]);
+#else
+
+  #ifdef VECTOR_REF_COPY
+  // Cast to explicitly discard const
+  self->storage[self->size-1] = (VECTOR_ELEMENT_TYPE) *val;
+  #else
+  self->storage[self->size-1] = (VECTOR_ELEMENT_TYPE) val;
+  #endif // VECTOR_REF_COPY
+#endif // VECTOR_ELEMENT_COPY
+
+  return VECTOR_ERROR_NONE;
+}
+
 #undef VECTOR_TYPENAME
 #undef VECTOR_ELEMENT_TYPE
+#undef VECTOR_ELEMENT_COPY
+#undef VECTOR_REF_COPY
 #undef VECTOR_ELEMENT_CONSTRUCTOR
 #undef VECTOR_ELEMENT_DESTRUCTOR
 
